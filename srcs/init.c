@@ -7,10 +7,17 @@ int	init_window(t_surf *surf, t_imgdata *data)
 	data->addr = NULL;
 	surf->win = mlx_new_window(surf->mlx, SCREEN_WIDTH, SCREEN_HEIGHT, "retro-MFA");
 	if (!surf->win)
+	{
+		printf("error: window initialization failed (init.c:8)\n");
 		return (1);
+	}
+	
 	data->img = mlx_new_image(surf->mlx, SCREEN_WIDTH, SCREEN_HEIGHT);
 	if (!data->img)
+	{
+		printf("error: image initialization failed (init.c:15)\n");
 		return (1);
+	}
 	data->addr = mlx_get_data_addr(data->img, \
 				&data->bits_per_pixel, &data->lines_length, &data->endian);
 	surf->img = data;

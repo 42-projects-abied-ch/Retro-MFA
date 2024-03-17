@@ -1,7 +1,7 @@
 #ifndef RETRO_H
 # define RETRO_H
 
-# include "mlx.h"
+# include <mlx.h>
 # include <stdlib.h>
 # include <math.h>
 # include <stdio.h>
@@ -13,10 +13,13 @@
 # include <fcntl.h>
 
 # define KEY_ESC 	65307
-# define SCREEN_WIDTH 1920
-# define SCREEN_HEIGHT 1080
-# define BUFLEN 38315514  
+# define KEY_LEFT_ARROW 65361
+# define KEY_RIGHT_ARROW 65363
+# define SCREEN_WIDTH 1280
+# define SCREEN_HEIGHT 720
+# define BUFLEN 44315514  
 # define MAX_IMAGES 1024
+# define PADDING 10
 
 typedef struct s_imgdata
 {
@@ -41,35 +44,35 @@ typedef struct s_mfa_image
 	int				bpc;		//bytes per color 
 }				t_mfaImg;
 
+typedef struct s_img_list
+{
+	t_imgdata			img;
+	struct s_img_list 	*next;
+	struct s_img_list 	*prev;
+}	t_img_list;
+
 typedef struct		s_surf
 {
 	void		*mlx;
 	void		*win;
 	t_imgdata	*img;
+	int			image_count;
 	t_mfaImg	images[MAX_IMAGES];
+	int			cidx;
+	t_img_list*	image_list;
+	t_img_list*	current_image;
 }					t_surf;
 
-int		get_t(int trgb);
-int		get_r(int trgb);
-int		get_g(int trgb);
-int		get_b(int trgb);
-// Arthur
-void	exit_failure(t_surf* data, char* msg);
-int		exit_success(t_surf* data);
-void	cleanup_display(t_surf* data);
-void	init_mlx(t_surf* data);
-void	init_window_arthur(t_surf* data);
-void	display_full_screen(t_surf* data);
-//Arthur
+void	display_image(t_surf* data, t_img_list* node);
+int		generate_images(t_surf* data);
+void	free_images(t_surf *surf, int count);
 int		create_trgb(int t, int r, int g, int b);
 void	pixel_put(t_imgdata *dt, int x, int y, int color);
 int		pixel_get(t_imgdata *data, int x, int y);
 int		check_arguments(int argc, char **argv);
 int		is_file_invalid(const char *fl);
 int		key_press_handler(int keycode, t_surf *surf);
-int		key_release_handler(int keycode, t_surf *surf);
 int		init_window(t_surf *surf, t_imgdata *data);
-int		count_images(const char *file_name,	unsigned char **patterns, int num_patterns, int bcount);
 int		parse_images(t_surf *surf, const char *file_name,	unsigned char **patterns, int num_patterns, int bcount);
 
 #endif

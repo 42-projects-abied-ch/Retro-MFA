@@ -1,104 +1,169 @@
 #include "retro.h"
-#include <mlx.h>
 
-t_imgdata *scale_texture(t_surf* data, t_imgdata *img, int target_width, int target_height)
+t_img_list	*new_node(t_imgdata img)
 {
-    t_imgdata *scaled_img = malloc(sizeof(t_imgdata));
-
-    scaled_img->img = mlx_new_image(data->mlx, target_width, target_height);
-    scaled_img->addr = mlx_get_data_addr(scaled_img->img, &scaled_img->bits_per_pixel, &scaled_img->lines_length, &scaled_img->endian);
-    scaled_img->width = target_width;
-    scaled_img->height = target_height;
-
-	double scale_x = (double)img->width / target_width;
-	double scale_y = (double)img->height / target_height;
-
-    for (int y = 0; y < target_height; y++) 
+	t_img_list*	node = malloc(sizeof(t_img_list));
+	if (node == NULL)
 	{
-        for (int x = 0; x < target_width; x++) 
-		{
-            int x_origin = (int)(x * scale_x);
-            int y_origin = (int)(y * scale_y);
-            int pixel_color = pixel_get(img, x_origin, y_origin);
-
-            pixel_put(scaled_img, x, y, pixel_color);
-        }
-    }
-    return scaled_img;
-}
-
-
-t_imgdata create_image(t_surf *data, char *path)
-{
-    t_imgdata img;
-
-    img.img = mlx_xpm_file_to_image(data->mlx, path, &img.width, &img.height);
-
-    img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.lines_length, &img.endian);
-
-    return img;
-}
-
-void	fill_images(t_surf* data)
-{
-	data->images[0].color = create_image(data, "textures/knight.xpm");
-	data->images[1].color = create_image(data, "textures/barrel.xpm");
-	data->images[2].color = create_image(data, "textures/cake.xpm");
-	data->images[3].color = create_image(data, "textures/dead.xpm");
-	data->images[4].color = create_image(data, "textures/gun.xpm");
-	data->images[5].color = create_image(data, "textures/pnj.xpm");
-	data->images[6].color = create_image(data, "textures/scream.xpm");
-	data->images[7].color = create_image(data, "textures/skulls.xpm");
-}
-
-void	scale_and_position_image(t_surf* data, t_imgdata* img, int target_x, int target_y, int target_width, int target_height)
-{
-	float original_aspect_ratio = (float)img->width / img->height;
-	float target_aspect_ratio = (float)target_width / target_height;
-	int scaled_width, scaled_height;
-	float scale_factor;
-
-	if (original_aspect_ratio > target_aspect_ratio)
-	{
-		scaled_width = target_width;
-		scale_factor = (float)target_width / img->width;
-		scaled_height = img->height * scale_factor;
+		printf("error: allocation failed (display.c:5)\n");
+		return NULL;
 	}
+
+	node->img = img;
+	node->next = NULL;
+	node->prev = NULL;
+
+	return node;
+}
+
+void	add_back(t_img_list** head, t_img_list* new_node)
+{
+	if (head == NULL || new_node == NULL)
+	{
+		return ;
+	}
+
+	if (*head == NULL)
+	{
+		*head = new_node;
+	}
+
 	else 
 	{
-		scaled_height = target_height;
-		scale_factor = (float)target_height / img->height;
-		scaled_width = img->width * scale_factor;
-	}
-	int offset_x = (target_width - scaled_width) / 2;
-	int offset_y = (target_height - scaled_height) / 2;
+		t_img_list* last = *head;
 
-	int final_x = target_x + offset_x;
-	int final_y = target_y + offset_y;
-	img = scale_texture(data, img, target_width, target_height);
-	mlx_put_image_to_window(data->mlx, data->win, img->img, final_x, final_y);
+		while (last->next != NULL)
+		{
+			last = last->next;
+		}
+
+		last->next = new_node;
+		new_node->prev = last;
+	}
 }
 
-void	display_all_images(t_surf* data, int image_count, int padding)
+void put_texture(t_img_list* head, t_imgdata *img, int final_x, int final_y)
 {
-	int aspect_ratio = SCREEN_WIDTH / SCREEN_HEIGHT;
-	int columns = round(sqrt((image_count * 2) * aspect_ratio));
-	int rows = ceil((float)(image_count * 2) / columns);
-	int image_width = (SCREEN_WIDTH - (padding * (columns + 1))) / columns;
-	int image_height = (SCREEN_WIDTH - (padding * (rows + 1))) / rows;
-
-	for (int i = 0; i < image_count; i++)
+    for (int y = final_y; y < img->height + final_y; y++) 
 	{
-		int row = floor((float)i / columns);
-		int column = i % columns;
-		int x_pos = (column * (image_width + padding)) + padding;
-		int y_pos = (row * (image_height + padding)) + padding;
-		scale_and_position_image(data, &data->images[i].color, x_pos, y_pos, image_width, image_height);
-	}
+        for (int x = final_x; x < img->width + final_x; x++)
+		{
+            int pixel_color = pixel_get(img, x - final_x, y - final_y);
+
+            pixel_put(&head->img, x, y, pixel_color);
+        }
+    }
 }
 
-void	display_full_screen(t_surf* data)
+int	expand_list(t_surf* data, t_img_list** head)
 {
-	fill_images(data);
-	display_all_images(data, 8, 0);
+	t_imgdata new_image;
+
+	(void)data;
+	new_image.img = mlx_new_image(data->mlx, SCREEN_WIDTH, SCREEN_HEIGHT);
+	if (new_image.img == NULL)
+	{
+		printf("error: allocation failed (display.c:63)\n");
+		return EXIT_FAILURE;
+	}
+	new_image.addr = mlx_get_data_addr(new_image.img, &new_image.bits_per_pixel, &new_image.lines_length, &new_image.endian);
+
+	t_img_list* node = new_node(new_image);
+	if (node == NULL)
+	{
+		mlx_destroy_image(data->mlx, new_image.img);
+		return EXIT_FAILURE;
+	}
+
+	add_back(head, node);
+
+	return EXIT_SUCCESS;
+}
+
+int	draw_sprites_to_images(t_surf* data, t_img_list** head)
+{
+	t_img_list* current_image = *head;
+
+	int current_image_y = 0 + PADDING;
+	int	max_height_on_row = 0;
+	int	right_most_pos_on_row = 0;
+
+	for (int i = 0; i < data->image_count; i++)
+	{
+		int current_image_x = right_most_pos_on_row + PADDING;
+		if (current_image_x + data->images[i].color.width > SCREEN_WIDTH - PADDING)
+		{
+			current_image_x = 0 + PADDING;
+			current_image_y += max_height_on_row + PADDING;
+			right_most_pos_on_row = 0;
+			max_height_on_row = 0;
+		}
+		if (current_image_y + data->images[i].color.height > SCREEN_HEIGHT - PADDING)
+		{
+			if (expand_list(data, head) == EXIT_FAILURE)
+			{
+				return EXIT_FAILURE;
+			}
+			current_image = current_image->next;
+			current_image_y = 0 + PADDING;
+			right_most_pos_on_row = 0;
+			max_height_on_row = 0;
+			continue ;
+		}
+		put_texture(current_image, &data->images[i].color, current_image_x, current_image_y);
+		max_height_on_row = fmax(max_height_on_row, data->images[i].color.height);
+		right_most_pos_on_row = current_image_x + data->images[i].color.width;
+	}
+	return EXIT_SUCCESS;
+}
+
+int	initialize_image_list(t_surf* data)
+{
+	t_imgdata img;
+
+	img.img = mlx_new_image(data->mlx, SCREEN_WIDTH, SCREEN_HEIGHT);
+	if (img.img == NULL)
+	{
+		printf("error: image allocation failed (display.c:124)\n");
+		return EXIT_FAILURE;
+	}
+
+	img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.lines_length, &img.endian);
+
+	data->image_list = new_node(img);
+	if (data->image_list == NULL)
+	{
+		mlx_destroy_image(data->mlx, img.img);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int		generate_images(t_surf* data)
+{
+	if (data->image_list != NULL)
+	{
+		return 0;
+	}
+
+	if (initialize_image_list(data) == EXIT_FAILURE)
+	{
+		return EXIT_FAILURE;
+	}
+
+	if (draw_sprites_to_images(data, &data->image_list) == EXIT_FAILURE)
+	{
+		return EXIT_FAILURE;
+	}
+
+	data->current_image = data->image_list;
+
+	return 0;
+}
+
+void	display_image(t_surf* data, t_img_list* node)
+{
+	mlx_clear_window(data->mlx, data->win);
+	mlx_put_image_to_window(data->mlx, data->win, node->img.img, 0, 0);
 }

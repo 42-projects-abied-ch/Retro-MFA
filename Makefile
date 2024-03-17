@@ -2,24 +2,26 @@ NAME			= 	retromfa
 
 SRCDIR			=	srcs
 SRCS			=	\
-					$(SRCDIR)/mlx_utils.c \
-					$(SRCDIR)/exit.c \
 					$(SRCDIR)/draw.c \
-					$(SRCDIR)/main_display.c \
 					$(SRCDIR)/display.c \
 					$(SRCDIR)/handler.c \
+					$(SRCDIR)/init.c \
+					$(SRCDIR)/parsing.c \
+					$(SRCDIR)/check.c \
+					$(SRCDIR)/main.c
 
 OBJDIR			=	$(SRCDIR)/objs
 OBJS			=	$(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o) 
 DEPS			=	$(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.d)
 
 #-------FLAGS------------------------- CC				= 	cc
-FLAGS			= 	-Wall -Wextra -Werror  -MD -MP -Ofast -march=native -O3 -g 
-LIBS			= 	-lmlx -lXext -lX11 -lm -lXfixes
+FLAGS			= 	-Wall -Wextra -Werror -g -MD -MP -Ofast -march=native -O3  
+LIBS			= 	-lmlx -lXext -lX11
 INCLUDE			=	-I ./inc
 RM				= 	rm -rf
 
 all: $(NAME)
+
 
 $(NAME): $(LIBFT) $(OBJS)
 	@echo "Linking..."

@@ -18,16 +18,18 @@ int		is_file_invalid(const char *fl)
 	fd = open(fl, O_RDONLY);
 	if (fd < 0)
 	{
-		perror("\033[1;31mError.\033[0m Can't open file");
+		printf("\033[1;31mError.\033[0m Can't open file\n");
 		return (1);
 	}
 	memset(buf, 0, 5);
 	sz = read(fd, buf, 4);
 	if (sz < 0 || strcmp(buf, "MMF2") != 0)
 	{
+		close(fd);
 		printf("\033[1;31mError.\033[0m Wrong file type. Must be an MFA file.\n");
 		return (1);
 	}
+	close(fd);
 	return (0);
 }
 
